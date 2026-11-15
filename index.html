@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#080b09" />
+    <meta name="description" content="A glyph-rendered isometric wasteland adventure. Find the capacitors. Wake the signal." />
+    <title>Dust &amp; Signal — a wasteland field report</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="game" id="game">
+      <canvas id="world" aria-label="An isometric ASCII wasteland. Use WASD to explore, E to scavenge, and Space to fire."></canvas>
+      <div class="scanlines" aria-hidden="true"></div>
+      <div class="vignette" aria-hidden="true"></div>
+
+      <header class="topbar">
+        <a class="wordmark" href="#" aria-label="Dust and Signal home">
+          <span class="wordmark-mark">D<span>/</span>S</span>
+          <span class="wordmark-copy"><strong>DUST &amp; SIGNAL</strong><small>WASTELAND FIELD REPORT <i>07</i></small></span>
+        </a>
+        <div class="sector"><span class="signal-dot"></span><span>THE SALT FLATS</span><b>SECTOR 07</b></div>
+        <div class="header-actions">
+          <button class="icon-button" id="map-toggle" aria-label="Toggle map" title="Toggle map (M)"><span aria-hidden="true">⌗</span><small>MAP</small></button>
+          <button class="icon-button" id="motion-toggle" aria-label="Toggle reduced motion" title="Toggle motion"><span aria-hidden="true">◌</span><small>MOTION</small></button>
+          <button class="icon-button" id="pause-toggle" aria-label="Pause game" title="Pause (Esc)"><span aria-hidden="true">Ⅱ</span><small>PAUSE</small></button>
+        </div>
+      </header>
+
+      <section class="status-bar" aria-label="Player status">
+        <div class="status-piece health-piece"><span class="eyebrow">VITALS</span><div class="health-pips" id="health-pips" aria-label="3 health"></div></div>
+        <span class="status-divider"></span>
+        <div class="status-piece charge-piece"><span class="eyebrow">PULSE CELLS</span><strong><span id="ammo-count">12</span><small> / 12</small></strong></div>
+        <span class="status-divider status-divider-wide"></span>
+        <div class="status-piece scrap-piece"><span class="eyebrow">SCRAP</span><strong><span class="scrap-icon">✳</span> <span id="scrap-count">00</span></strong></div>
+      </section>
+
+      <aside class="mission-panel panel">
+        <div class="panel-kicker"><span>ACTIVE CONTRACT</span><span class="contract-id">DS—07</span></div>
+        <h1>Last light<br /><em>at the relay.</em></h1>
+        <p class="mission-copy">The old tower still has a pulse. Find three capacitors and bring it back.</p>
+        <div class="objective-list" id="objective-list">
+          <div class="objective" data-objective="0"><span class="objective-box"></span><span>Scavenge capacitor <b>01</b></span><i></i></div>
+          <div class="objective" data-objective="1"><span class="objective-box"></span><span>Scavenge capacitor <b>02</b></span><i></i></div>
+          <div class="objective" data-objective="2"><span class="objective-box"></span><span>Scavenge capacitor <b>03</b></span><i></i></div>
+          <div class="objective relay-objective" data-objective="relay"><span class="objective-box"></span><span>Restart the relay</span><i></i></div>
+        </div>
+        <div class="panel-rule"></div>
+        <div class="mission-meta"><span>LOCAL TIME</span><b id="clock">02:14 AM</b></div>
+        <div class="mission-meta"><span>WEATHER</span><b><span class="weather-mark">◒</span> Ash fall</b></div>
+      </aside>
+
+      <aside class="field-panel panel">
+        <div class="panel-kicker"><span>FIELD NOTES</span><span class="rec-dot"></span></div>
+        <div class="field-note"><span class="note-mark">⌁</span><p id="field-note">A low signal leaks from the tower. Something else is listening.</p></div>
+        <div class="panel-rule"></div>
+        <div class="inventory-heading"><span>ON YOUR PERSON</span><b id="inventory-count">01</b></div>
+        <div class="inventory-item"><span class="inventory-glyph">/\</span><span>Scrap rig</span><small>WORN</small></div>
+        <div class="inventory-item"><span class="inventory-glyph amber">◈</span><span>Pulse caster</span><small id="weapon-state">READY</small></div>
+        <div class="inventory-item"><span class="inventory-glyph teal">□</span><span>Capacitors</span><small id="capacitor-count">0 / 3</small></div>
+        <button class="map-link" id="map-link">OPEN FIELD MAP <span>↗</span></button>
+      </aside>
+
+      <div class="location-chip"><span class="location-cross">✳</span><span><small>CURRENT POSITION</small><b id="location-name">OLD CULVERT</b></span><span class="location-coords" id="location-coords">X 06 · Y 17</span></div>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-glyph">›</span><span id="toast-text">Signal's weak. Find the capacitors.</span></div>
+
+      <div class="interaction-prompt" id="interaction-prompt" hidden><kbd>E</kbd><span id="interaction-text">SEARCH CACHE</span></div>
+
+      <div class="map-overlay" id="map-overlay" hidden>
+        <div class="map-card panel">
+          <div class="panel-kicker"><span>FIELD MAP</span><button id="map-close" class="close-button" aria-label="Close map">×</button></div>
+          <h2>Sector <em>07</em></h2>
+          <canvas id="mini-map" width="420" height="340" aria-label="Map of Sector 07"></canvas>
+          <div class="map-legend"><span><i class="legend-you"></i> YOU</span><span><i class="legend-cache"></i> CACHE</span><span><i class="legend-hostile"></i> HOSTILE</span><span><i class="legend-relay"></i> RELAY</span></div>
+          <p>Three capacitors. One last transmission.</p>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="modal-overlay" hidden>
+        <div class="modal-card panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <span class="modal-stamp" id="modal-stamp">FIELD PAUSED</span>
+          <h2 id="modal-title">Hold your breath.</h2>
+          <p id="modal-copy">The dust is listening.</p>
+          <button id="modal-action" class="primary-button">BACK TO THE FLATS <span>→</span></button>
+          <button id="restart-action" class="text-button">RESTART THE RUN</button>
+        </div>
+      </div>
+
+      <footer class="bottom-bar">
+        <div class="controls-hint"><span class="control-pair"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><small>MOVE</small></span><span class="control-pair"><kbd>SPACE</kbd><small>PULSE</small></span><span class="control-pair"><kbd>E</kbd><small>INTERACT</small></span><span class="control-pair"><kbd>M</kbd><small>FIELD MAP</small></span></div>
+        <span class="world-credit">NO SIGNAL IS A KIND OF PEACE <i>·</i> V. 0.7.4</span>
+      </footer>
+
+      <div class="touch-controls" aria-label="Touch controls">
+        <div class="dpad">
+          <button data-dir="up" aria-label="Move up">↑</button>
+          <button data-dir="left" aria-label="Move left">←</button>
+          <button data-dir="down" aria-label="Move down">↓</button>
+          <button data-dir="right" aria-label="Move right">→</button>
+        </div>
+        <div class="touch-actions"><button id="touch-interact">E <small>SEARCH</small></button><button id="touch-pulse">✳ <small>PULSE</small></button></div>
+      </div>
+    </main>
+    <script src="game.js" defer></script>
+  </body>
+</html>
